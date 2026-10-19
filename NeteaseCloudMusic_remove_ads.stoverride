@@ -1,0 +1,142 @@
+# 由 Loon 插件移植：网易云音乐去广告
+# 上游：https://raw.githubusercontent.com/mihoyo-typ/KeleeOne/Loon/Plugin/NeteaseCloudMusic_remove_ads.lpx
+# 转换脚本：update-from-lpx.js（重新运行即可跟随上游更新）
+
+#!name=网易云音乐去广告
+#!desc=过滤网易云音乐广告，并允许自定义界面。
+#!author=RuCu6[https://github.com/RuCu6], Keywos[https://github.com/Keywos]
+#!homepage=https://hub.kelee.one
+#!icon=https://raw.githubusercontent.com/luestr/IconResource/main/App_icon/120px/NeteaseCloudMusic.png
+#!tag=去广告
+#!date=2025-05-13 15:17:08
+
+name: '网易云音乐去广告'
+desc: '过滤网易云音乐广告，并允许自定义界面。（Stash 移植版）'
+
+# Loon [Argument] → Stash 覆写参数（在 Stash「覆写」里点开即可开关）
+arguments-version: 1
+arguments:
+  MY:
+    type: switch
+    title: '[隐藏底栏]漫游标签'
+    default: false
+  DT:
+    type: switch
+    title: '[隐藏底部]笔记标签'
+    default: false
+  FX:
+    type: switch
+    title: '[隐藏底部]发现标签'
+    default: false
+  PRGG:
+    type: switch
+    title: '[隐藏首页]问候语'
+    default: false
+  PRRK:
+    type: switch
+    title: '[隐藏首页]排行榜'
+    default: false
+  PRDRD:
+    type: switch
+    title: '[隐藏首页]每日推荐'
+    default: false
+  PRSCVPT:
+    type: switch
+    title: '[隐藏首页]推荐歌单'
+    default: false
+  PRST:
+    type: switch
+    title: '[隐藏首页]最近常听'
+    default: false
+  PRRR:
+    type: switch
+    title: '[隐藏首页]雷达歌单'
+    default: false
+  HMPR:
+    type: switch
+    title: '[隐藏首页]音乐合伙人'
+    default: false
+  PRMST:
+    type: switch
+    title: '[隐藏首页]推荐专属歌单'
+    default: false
+  PRCN:
+    type: switch
+    title: '[隐藏首页]你的专属歌单'
+    default: false
+
+# Loon [Rule] → Stash rules
+# 注意：DOMAIN 级 REJECT 会拦掉该域名的全部请求，若影响正常使用，删掉对应行即可
+rules:
+  - DOMAIN,iadmat.nosdn.127.net,REJECT
+  - DOMAIN,iadmatapk.nosdn.127.net,REJECT
+  - DOMAIN,iadmusicmat.music.126.net,REJECT
+  - DOMAIN,iadmusicmatvideo.music.126.net,REJECT
+  - DOMAIN,ipv4.music.163.com,REJECT
+  - DOMAIN,ipv6.music.163.com,REJECT
+
+http:
+  mitm:
+    - interface*.music.163.com
+
+  # Loon [Rewrite] reject*/302 → Stash url-rewrite
+  url-rewrite:
+    - ^https?:\/\/interface\d?\.music\.163\.com\/eapi\/(?:delivery\/(batch-)?deliver|moment\/tab\/info\/|side-bar\/mini-program\/music-service\/account|yunbei\/account\/entrance\/) - reject-dict
+    - ^https?:\/\/interface\d?\.music\.163\.com\/eapi\/(?:community\/friends\/fans-group\/artist\/group\/|mine\/applet\/redpoint|music\/songshare\/text\/recommend\/|resniche\/position\/play\/new\/|resniche\/tspopup\/show|resource\/comments?\/musiciansaid\/|user\/sub\/artist) - reject-dict
+    - ^https?:\/\/interface\d?\.music\.163\.com\/eapi\/(?:ios\/version|mlivestream\/entrance\/playpage\/|link\/position\/show\/strategy|link\/scene\/show\/resource|v1\/content\/exposure\/comment\/banner\/) - reject-dict
+    - ^https?:\/\/interface\d?\.music\.163\.com\/w?eapi\/(?:activity\/bonus\/playpage\/time\/query|resource-exposure\/|search\/(?:chart\/|rcmd\/keyword\/|specialkeyword\/)) - reject-dict
+    - ^https:\/\/interface\d\.music\.163\.com\/eapi\/my\/podcast\/tab\/recommend - reject-dict
+
+  # Loon mock-response-body（空响应体）→ Stash mock
+  mock:
+    - match: '^https?:\/\/interface\d?\.music\.163\.com\/e?api\/(ocpc\/)?ad\/'
+      status-code: 200
+    - match: '^https?:\/\/interface\d?\.music\.163.com\/w?e?api\/search\/default'
+      status-code: 200
+
+  # Loon [Script] http-response → Stash script（脚本走 script-providers，按 interval 缓存更新）
+  script:
+    - match: '^https?:\/\/interface\d?\.music\.163\.com\/eapi\/(?:batch|v2\/resource\/comment\/floor\/get)'
+      name: NeteaseCloudMusic_remove_ads
+      type: response
+      require-body: true
+      binary-mode: true
+      timeout: 20
+    - match: '^https?:\/\/interface\d?\.music\.163\.com\/eapi\/(?:homepage\/block\/page|link\/page\/rcmd\/(?:block\/resource\/multi\/refresh|resource\/show))'
+      name: NeteaseCloudMusic_remove_ads
+      type: response
+      require-body: true
+      binary-mode: true
+      timeout: 20
+      argument: '[${args.PRGG},${args.PRRK},${args.PRDRD},${args.PRSCVPT},${args.PRST},${args.PRRR},${args.HMPR},${args.PRMST},${args.PRCN}]'
+    - match: '^https?:\/\/interface\d?\.music\.163\.com\/eapi\/link\/home\/framework\/tab'
+      name: NeteaseCloudMusic_remove_ads
+      type: response
+      require-body: true
+      binary-mode: true
+      timeout: 20
+      argument: '[${args.MY},${args.DT},${args.FX}]'
+    - match: '^https?:\/\/interface\d?\.music\.163\.com\/eapi\/link\/page\/discovery\/resource\/show'
+      name: NeteaseCloudMusic_remove_ads
+      type: response
+      require-body: true
+      binary-mode: true
+      timeout: 20
+    - match: '^https?:\/\/interface\d?\.music\.163\.com\/eapi\/link\/position\/show\/resource'
+      name: NeteaseCloudMusic_remove_ads
+      type: response
+      require-body: true
+      binary-mode: true
+      timeout: 20
+    - match: '^https?:\/\/interface\d?\.music\.163\.com\/eapi\/user\/follow\/users\/mixed\/get'
+      name: NeteaseCloudMusic_remove_ads
+      type: response
+      require-body: true
+      binary-mode: true
+      timeout: 20
+
+script-providers:
+  # 官方源: https://kelee.one/Resource/JavaScript/NeteaseCloudMusic/NeteaseCloudMusic_remove_ads.js（镜像失效时可换成它）
+  NeteaseCloudMusic_remove_ads:
+    url: https://raw.githubusercontent.com/mihoyo-typ/KeleeOne/Loon/Script/NeteaseCloudMusic_remove_ads.js
+    interval: 86400
