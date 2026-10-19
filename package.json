@@ -1,0 +1,15 @@
+{
+  "name": "baidumap-remove-ads-stoverride",
+  "version": "1.0.0",
+  "private": true,
+  "description": "把 Kelee 的 Loon 插件 BaiduMap_remove_ads.lpx 自动转换成 Stash 覆写(.stoverride)",
+  "type": "commonjs",
+  "scripts": {
+    "update": "node update-from-lpx.js",
+    "verify": "node verify.js"
+  },
+  "dependencies": {
+    "jq-web": "^0.6.2",
+    "yaml": "^2.9.1"
+  }
+}
